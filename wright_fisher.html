@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wright-Fisher Visual Explanation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(to bottom, #f0f4f8, #d9e2ec);
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        label {
+            font-weight: bold;
+            color: #34495e;
+            font-size: 0.9em;
+        }
+        input, select {
+            padding: 8px 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        button {
+            padding: 12px 30px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        .matrix-container {
+            overflow-x: auto;
+            margin: 20px 0;
+            padding: 10px;
+            background: #ecf0f1;
+            border-radius: 8px;
+        }
+        table {
+            border-collapse: collapse;
+            margin: 0 auto;
+            background: white;
+        }
+        th, td {
+            border: 2px solid #bdc3c7;
+            padding: 10px 15px;
+            text-align: center;
+            min-width: 80px;
+            font-size: 0.95em;
+        }
+        th {
+            background: #34495e;
+            color: white;
+            font-weight: bold;
+        }
+        .gen-header {
+            background: #2c3e50;
+            color: white;
+            font-weight: bold;
+        }
+        .empty-cell {
+            background: #ecf0f1;
+            color: #95a5a6;
+        }
+        .filled-cell {
+            background: #d5f4e6;
+            color: #27ae60;
+            font-weight: bold;
+            animation: fillIn 0.3s ease;
+        }
+        .current-cell {
+            background: #fff3cd;
+            border: 3px solid #ffc107;
+            font-weight: bold;
+            animation: pulse 0.5s ease;
+        }
+        @keyframes fillIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .info-box {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .step-info {
+            background: #fff9e6;
+            border-left: 4px solid #f39c12;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+            font-size: 1.05em;
+        }
+        .code-box {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .highlight {
+            background: #f39c12;
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .stat-box {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 5px;
+            margin: 5px;
+            font-weight: bold;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #ecf0f1;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2ecc71);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .legend-box {
+            width: 30px;
+            height: 30px;
+            border: 2px solid #bdc3c7;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧬 Wright-Fisher Process: Visual Matrix Explanation</h1>
+    <p class="subtitle">Watch how the matrix fills up step-by-step during simulation</p>
+    
+    <div class="container">
+        <h2>📊 Simulation Parameters</h2>
+        <div class="controls">
+            <div class="control-group">
+                <label>Population Size (n):</label>
+                <input type="number" id="popSize" value="50" min="10" max="100">
+            </div>
+            <div class="control-group">
+                <label>Generations (ngen):</label>
+                <input type="number" id="ngen" value="10" min="3" max="20">
+            </div>
+            <div class="control-group">
+                <label>Replicates (nrep):</label>
+                <input type="number" id="nrep" value="5" min="2" max="10">
+            </div>
+            <div class="control-group">
+                <label>Initial Frequency (γ):</label>
+                <input type="number" id="gamma" value="0.3" min="0.01" max="0.99" step="0.01">
+            </div>
+            <div class="control-group">
+                <label>Speed:</label>
+                <select id="speed">
+                    <option value="2000">Slow</option>
+                    <option value="1000" selected>Medium</option>
+                    <option value="500">Fast</option>
+                    <option value="100">Very Fast</option>
+                </select>
+            </div>
+        </div>
+        
+        <div style="text-align: center;">
+            <button id="startBtn" onclick="startSimulation()">▶️ Start Simulation</button>
+            <button id="resetBtn" onclick="resetSimulation()">🔄 Reset</button>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress" style="width: 0%;">0%</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📝 Current Step Explanation</h2>
+        <div class="step-info" id="stepInfo">
+            Click "Start Simulation" to begin the visual walkthrough!
+        </div>
+        
+        <div class="code-box" id="codeBox">
+            <span style="color: #95a5a6;"># Waiting to start...</span>
+        </div>
+        
+        <div id="statsBox" style="text-align: center; margin: 20px 0;"></div>
+    </div>
+
+    <div class="container">
+        <h2>🎯 The Results Matrix</h2>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-box empty-cell"></div>
+                <span>Empty (not yet filled)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box filled-cell"></div>
+                <span>Filled (computed)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box current-cell"></div>
+                <span>Current position</span>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <strong>Matrix Structure:</strong><br>
+            • <strong>Rows:</strong> Generations (0 to ngen)<br>
+            • <strong>Columns:</strong> Replicates (independent simulations)<br>
+            • <strong>Values:</strong> Frequency of cancer cells (0 = extinct, 1 = fixed)
+        </div>
+        
+        <div class="matrix-container" id="matrixContainer">
+            <p style="text-align: center; color: #7f8c8d;">Matrix will appear here...</p>
+        </div>
+    </div>
+
+    <script>
+        let n, ngen, nrep, gamma, speed;
+        let matrix = [];
+        let currentRep = 0;
+        let currentGen = 0;
+        let isRunning = false;
+        let timeoutId = null;
+
+        function initializeMatrix() {
+            n = parseInt(document.getElementById('popSize').value);
+            ngen = parseInt(document.getElementById('ngen').value);
+            nrep = parseInt(document.getElementById('nrep').value);
+            gamma = parseFloat(document.getElementById('gamma').value);
+            speed = parseInt(document.getElementById('speed').value);
+            
+            // Create empty matrix
+            matrix = [];
+            for (let i = 0; i <= ngen; i++) {
+                matrix[i] = new Array(nrep).fill(null);
+            }
+            
+            currentRep = 0;
+            currentGen = 0;
+            
+            renderMatrix();
+            updateStepInfo("Initialization", `Created matrix with ${ngen + 1} rows (generations) and ${nrep} columns (replicates)`);
+            updateCodeBox(`results <- matrix(0, nrow = ${ngen + 1}, ncol = ${nrep})`);
+        }
+
+        function renderMatrix() {
+            let html = '<table><thead><tr><th>Gen</th>';
+            for (let rep = 0; rep < nrep; rep++) {
+                html += `<th>Rep ${rep + 1}</th>`;
+            }
+            html += '</tr></thead><tbody>';
+            
+            for (let gen = 0; gen <= ngen; gen++) {
+                html += `<tr><td class="gen-header">${gen}</td>`;
+                for (let rep = 0; rep < nrep; rep++) {
+                    let value = matrix[gen][rep];
+                    let cellClass = 'empty-cell';
+                    let displayValue = '—';
+                    
+                    if (value !== null) {
+                        cellClass = 'filled-cell';
+                        displayValue = value.toFixed(3);
+                    }
+                    
+                    if (gen === currentGen && rep === currentRep && isRunning) {
+                        cellClass = 'current-cell';
+                    }
+                    
+                    html += `<td class="${cellClass}">${displayValue}</td>`;
+                }
+                html += '</tr>';
+            }
+            
+            html += '</tbody></table>';
+            document.getElementById('matrixContainer').innerHTML = html;
+        }
+
+        function updateStepInfo(title, description) {
+            document.getElementById('stepInfo').innerHTML = `<strong>📍 ${title}</strong><br>${description}`;
+        }
+
+        function updateCodeBox(code) {
+            document.getElementById('codeBox').innerHTML = code;
+        }
+
+        function updateStats() {
+            const initialCancer = Math.round(n * gamma);
+            const currentValue = matrix[currentGen][currentRep];
+            const currentCancer = currentValue !== null ? Math.round(currentValue * n) : initialCancer;
+            
+            let html = `
+                <div class="stat-box">n = ${n}</div>
+                <div class="stat-box">γ = ${gamma}</div>
+                <div class="stat-box">Initial cancer cells = ${initialCancer}</div>
+                <div class="stat-box">Current cancer cells = ${currentCancer}</div>
+                <div class="stat-box">Current frequency = ${(currentCancer / n).toFixed(3)}</div>
+            `;
+            document.getElementById('statsBox').innerHTML = html;
+        }
+
+        async function startSimulation() {
+            if (isRunning) return;
+            
+            document.getElementById('startBtn').disabled = true;
+            isRunning = true;
+            
+            initializeMatrix();
+            await sleep(speed);
+            
+            // Start simulation
+            for (currentRep = 0; currentRep < nrep; currentRep++) {
+                if (!isRunning) break;
+                
+                // Initialize first generation
+                const initialCancer = Math.round(n * gamma);
+                matrix[0][currentRep] = initialCancer / n;
+                currentGen = 0;
+                
+                renderMatrix();
+                updateStepInfo(
+                    `Replicate ${currentRep + 1}: Initialize Generation 0`,
+                    `Starting with ${initialCancer} cancer cells out of ${n} total.<br>` +
+                    `Initial frequency = ${initialCancer}/${n} = ${(initialCancer / n).toFixed(3)}`
+                );
+                updateCodeBox(
+                    `<span style="color: #95a5a6;"># Replicate ${currentRep + 1}</span><br>` +
+                    `cancer_count <- round(${n} * ${gamma})<br>` +
+                    `<span style="color: #95a5a6;"># cancer_count = ${initialCancer}</span><br>` +
+                    `results[1, ${currentRep + 1}] <- ${initialCancer} / ${n}<br>` +
+                    `<span style="color: #95a5a6;"># Stored: ${(initialCancer / n).toFixed(3)}</span>`
+                );
+                updateStats();
+                updateProgress();
+                await sleep(speed);
+                
+                // Simulate generations
+                let cancerCount = initialCancer;
+                for (currentGen = 1; currentGen <= ngen; currentGen++) {
+                    if (!isRunning) break;
+                    
+                    const p = cancerCount / n;
+                    const newCancerCount = binomialSample(n, p);
+                    cancerCount = newCancerCount;
+                    matrix[currentGen][currentRep] = cancerCount / n;
+                    
+                    renderMatrix();
+                    updateStepInfo(
+                        `Replicate ${currentRep + 1}: Generation ${currentGen}`,
+                        `Previous generation had ${Math.round(matrix[currentGen - 1][currentRep] * n)} cancer cells (frequency = ${p.toFixed(3)}).<br>` +
+                        `We sample ${n} new individuals, each with ${(p * 100).toFixed(1)}% chance of being cancer.<br>` +
+                        `<strong>Result:</strong> ${cancerCount} cancer cells in new generation (frequency = ${(cancerCount / n).toFixed(3)})`
+                    );
+                    updateCodeBox(
+                        `<span style="color: #95a5a6;"># Generation ${currentGen}, Replicate ${currentRep + 1}</span><br>` +
+                        `p <- ${Math.round(matrix[currentGen - 1][currentRep] * n)} / ${n}<br>` +
+                        `<span style="color: #95a5a6;"># p = ${p.toFixed(3)}</span><br>` +
+                        `cancer_count <- <span class="highlight">rbinom(1, size=${n}, prob=${p.toFixed(3)})</span><br>` +
+                        `<span style="color: #95a5a6;"># Result: ${cancerCount} cancer cells</span><br>` +
+                        `results[${currentGen + 1}, ${currentRep + 1}] <- ${cancerCount} / ${n}<br>` +
+                        `<span style="color: #95a5a6;"># Stored: ${(cancerCount / n).toFixed(3)}</span>`
+                    );
+                    updateStats();
+                    updateProgress();
+                    await sleep(speed);
+                }
+            }
+            
+            if (isRunning) {
+                updateStepInfo(
+                    "✅ Simulation Complete!",
+                    `All ${nrep} replicates completed for ${ngen} generations.<br>` +
+                    `The matrix is now fully populated with cancer cell frequencies.<br>` +
+                    `Each column represents an independent simulation of the Wright-Fisher process.`
+                );
+                updateCodeBox(
+                    `<span style="color: #2ecc71;"># Simulation complete!</span><br>` +
+                    `return(results)<br>` +
+                    `<span style="color: #95a5a6;"># Matrix dimensions: ${ngen + 1} x ${nrep}</span>`
+                );
+            }
+            
+            isRunning = false;
+            document.getElementById('startBtn').disabled = false;
+            updateProgress();
+        }
+
+        function resetSimulation() {
+            if (timeoutId) clearTimeout(timeoutId);
+            isRunning = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('matrixContainer').innerHTML = '<p style="text-align: center; color: #7f8c8d;">Matrix will appear here...</p>';
+            document.getElementById('stepInfo').innerHTML = 'Click "Start Simulation" to begin the visual walkthrough!';
+            document.getElementById('codeBox').innerHTML = '<span style="color: #95a5a6;"># Waiting to start...</span>';
+            document.getElementById('statsBox').innerHTML = '';
+            document.getElementById('progress').style.width = '0%';
+            document.getElementById('progress').textContent = '0%';
+        }
+
+        function binomialSample(n, p) {
+            let count = 0;
+            for (let i = 0; i < n; i++) {
+                if (Math.random() < p) count++;
+            }
+            return count;
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => {
+                timeoutId = setTimeout(resolve, ms);
+            });
+        }
+
+        function updateProgress() {
+            const totalSteps = nrep * (ngen + 1);
+            const completedSteps = currentRep * (ngen + 1) + currentGen + 1;
+            const percentage = Math.min(100, (completedSteps / totalSteps) * 100);
+            document.getElementById('progress').style.width = percentage + '%';
+            document.getElementById('progress').textContent = Math.round(percentage) + '%';
+        }
+    </script>
+</body>
+</html>
